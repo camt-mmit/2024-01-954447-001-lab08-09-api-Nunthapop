@@ -1,0 +1,14 @@
+<div class="app-cl-main-content">
+  <div class="-cmp-actions-bar">
+    <button type="button" appNavigateBack class="app-cl-button">
+      <i class="material-symbols-outlined">arrow_back</i>
+    </button>
+  </div>
+  @if (!resource.isLoading()) {
+    @if (resource.value(); as data) {
+      <app-sw-species-view [data]="data" (linkClick)="onLinkClick($event)" />
+    }
+  } @else {
+    <app-loading />
+  }
+</div>

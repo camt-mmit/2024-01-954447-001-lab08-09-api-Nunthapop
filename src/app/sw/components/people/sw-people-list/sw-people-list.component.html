@@ -1,46 +1,58 @@
 <form [formGroup]="formGroup()" (ngSubmit)="onSubmit()" class="-cmp-search-box">
   <label class="-cl-field">
     <b>Search</b>
-    <input type="text" formControlName="search" class="-cl-control" />
+    <input
+      type="text"
+      inputmode="search"
+      enterkeyhint="search"
+      formControlName="search"
+      class="-cl-control"
+    />
   </label>
   <button type="button" (click)="clear()" class="app-cl-button app-cl-warn">
     <i class="material-symbols-outlined">close</i>
   </button>
 </form>
-@if (!isLoading()) {
-  @if (parsedData(); as parsedData) {
-    <div class="-cmp-pagination">
-      <button
-        type="button"
-        [disabled]="!parsedData.previous"
-        (click)="goto(parsedData.previous)"
-        class="app-cl-button"
-      >
-        <i class="material-symbols-outlined">chevron_left</i>
-      </button>
-      <button
-        type="button"
-        [disabled]="!parsedData.next"
-        (click)="goto(parsedData.next)"
-        class="app-cl-button"
-      >
-        <i class="material-symbols-outlined">chevron_right</i>
-      </button>
-    </div>
-    @if (parsedData.count > 0) {
-      <div class="-cmp-resoures-list">
-        @for (item of parsedData.results; track item.id) {
-          <div class="-cmp-resource">
-            <button type="button" (click)="select(item.id)">
-              {{ item.name }} [{{ item.gender }}]
-            </button>
-          </div>
-        }
-      </div>
-    } @else {
-      <p>Not found!!</p>
-    }
+<div class="-cmp-actions-bar">
+  @if (isLoading()) {
+    <app-loading />
   }
-} @else {
-  <p>Loading...</p>
+  <div class="-cmp-pagination">
+    <button
+      type="button"
+      [disabled]="!parsedData()?.previous || isLoading()"
+      (click)="goto(parsedData()?.previous ?? null)"
+      class="app-cl-button"
+    >
+      <i class="material-symbols-outlined">chevron_left</i>
+    </button>
+    <button
+      type="button"
+      [disabled]="!parsedData()?.next || isLoading()"
+      (click)="goto(parsedData()?.next ?? null)"
+      class="app-cl-button"
+    >
+      <i class="material-symbols-outlined">chevron_right</i>
+    </button>
+  </div>
+</div>
+@if (parsedData(); as parsedData) {
+  @if (parsedData.count > 0) {
+    <div class="-cmp-resoures-list">
+      @for (item of parsedData.results; track item.id) {
+        <button type="button" (click)="select(item.id)" class="-cmp-resource">
+          <h3 class="-cl-title">{{ item.name }}</h3>
+          <b class="-cl-meta"
+            ><span title="gender">{{
+              item.gender === 'male' ? '♂️'
+              : item.gender === 'female' ? '♀️'
+              : '[' + item.gender + ']'
+            }}</span></b
+          >
+        </button>
+      }
+    </div>
+  } @else {
+    <p>Not found!!</p>
+  }
 }

@@ -14,14 +14,12 @@ export class PeopleResourceService {
     return resource({
       request: searchData,
 
-      loader: async ({ request: searchData, abortSignal }) => {
+      loader: async ({ request, abortSignal }) => {
         const url = new URL(serviceUrl);
 
-        if (typeof searchData !== 'undefined') {
-          Object.entries(searchData)
-            .filter(([, value]) => !!value)
-            .forEach(([key, value]) => url.searchParams.set(key, value));
-        }
+        Object.entries(request)
+          .filter(([, value]) => !!value)
+          .forEach(([key, value]) => url.searchParams.set(key, value));
 
         const res = await fetch(url, { signal: abortSignal });
         const json = await res.json();
@@ -39,8 +37,8 @@ export class PeopleResourceService {
     return resource({
       request: id,
 
-      loader: async ({ request: id, abortSignal }) => {
-        const url = new URL(id, serviceUrl);
+      loader: async ({ request, abortSignal }) => {
+        const url = new URL(request, serviceUrl);
 
         const res = await fetch(url, { signal: abortSignal });
         const json = await res.json();

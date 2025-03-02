@@ -1,0 +1,7 @@
+@use '../../scss/shared-view';
+
+.app-cmp-data-list {
+  & > .app-cl-title {
+    width: 15ch;
+  }
+}

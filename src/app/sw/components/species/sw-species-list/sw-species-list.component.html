@@ -1,0 +1,58 @@
+<form [formGroup]="formGroup()" (ngSubmit)="onSubmit()" class="-cmp-search-box">
+  <label class="-cl-field">
+    <b>Search</b>
+    <input
+      type="text"
+      inputmode="search"
+      enterkeyhint="search"
+      formControlName="search"
+      class="-cl-control"
+    />
+  </label>
+  <button type="button" (click)="clear()" class="app-cl-button app-cl-warn">
+    <i class="material-symbols-outlined">close</i>
+  </button>
+</form>
+<div class="-cmp-actions-bar">
+  @if (isLoading()) {
+    <app-loading />
+  }
+  <div class="-cmp-pagination">
+    <button
+      type="button"
+      [disabled]="!parsedData()?.previous || isLoading()"
+      (click)="goto(parsedData()?.previous ?? null)"
+      class="app-cl-button"
+    >
+      <i class="material-symbols-outlined">chevron_left</i>
+    </button>
+    <button
+      type="button"
+      [disabled]="!parsedData()?.next || isLoading()"
+      (click)="goto(parsedData()?.next ?? null)"
+      class="app-cl-button"
+    >
+      <i class="material-symbols-outlined">chevron_right</i>
+    </button>
+  </div>
+</div>
+@if (parsedData(); as parsedData) {
+  @if (parsedData.count > 0) {
+    <div class="-cmp-resoures-list">
+      @for (item of parsedData.results; track item.id) {
+        <button type="button" (click)="select(item.id)" class="-cmp-resource">
+          <h3 class="-cl-title">{{ item.name }}</h3>
+          <b class="-cl-meta"
+            >[{{ item.classification }}] (👪<span
+              title="people"
+              class="app-cl-number -cl-number-data"
+              >{{ item.people.length }}</span
+            >)</b
+          >
+        </button>
+      }
+    </div>
+  } @else {
+    <p>Not found!!</p>
+  }
+}

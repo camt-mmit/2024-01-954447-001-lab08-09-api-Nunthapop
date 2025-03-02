@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { SwPeopleListComponent } from '../../../components/people/sw-people-list/sw-people-list.component';
 import { SearchData } from '../../../models';
 import { PeopleResourceService } from '../../../services/people-resource.service';
+import { createSwNavigateFn } from '../../helpers';
 
 @Component({
   selector: 'app-sw-people-resource-list-page',
@@ -22,7 +23,7 @@ export class SwPeopleResourceListPageComponent {
     initialValue: {},
   });
 
-  protected readonly dataResource = this.service.getAll(this.searchData);
+  protected readonly resource = this.service.getAll(this.searchData);
 
   private router = inject(Router);
 
@@ -33,14 +34,9 @@ export class SwPeopleResourceListPageComponent {
     });
   }
 
-  protected onSelect(id: string): void {
-    const idNumber = new URL(id).pathname
-      .split('/')
-      .reverse()
-      .find((path) => path !== '');
+  private readonly natigate = createSwNavigateFn();
 
-    this.router.navigate(['..', idNumber], {
-      relativeTo: this.activatedRoute,
-    });
+  protected onSelect(id: string): void {
+    this.natigate(id);
   }
 }

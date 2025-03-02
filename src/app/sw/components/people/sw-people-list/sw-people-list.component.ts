@@ -7,12 +7,13 @@ import {
   output,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { LoadingComponent } from '../../../../shared/components/loading/loading.component';
 import { parsePeopleList } from '../../../helpers';
 import { Person, ResourcesList, SearchData } from '../../../models';
 
 @Component({
   selector: 'app-sw-people-list',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, LoadingComponent],
   templateUrl: './sw-people-list.component.html',
   styleUrl: './sw-people-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -25,8 +26,11 @@ export class SwPeopleListComponent {
   readonly searchDataChange = output<SearchData>();
   readonly itemSelect = output<string>();
 
-  protected readonly parsedData = computed(() =>
-    this.data() ? parsePeopleList(this.data()!) : undefined,
+  protected readonly parsedData = computed(
+    () => (this.data() ? parsePeopleList(this.data()!) : undefined),
+    {
+      equal: (pre, next) => typeof next === 'undefined' || Object.is(pre, next),
+    },
   );
 
   private readonly fb = inject(FormBuilder).nonNullable;

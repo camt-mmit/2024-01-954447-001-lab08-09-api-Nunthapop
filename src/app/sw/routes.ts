@@ -4,6 +4,10 @@ import { SwPeopleHttpClientListPageComponent } from './pages/people/sw-people-ht
 import { SwPeoplePageComponent } from './pages/people/sw-people-page/sw-people-page.component';
 import { SwPeopleResourceListPageComponent } from './pages/people/sw-people-resource-list-page/sw-people-resource-list-page.component';
 import { SwPersonViewPageComponent } from './pages/people/sw-person-view-page/sw-person-view-page.component';
+import { SwPlanetViewPageComponent } from './pages/planets/sw-planet-view-page/sw-planet-view-page.component';
+import { SwPlanetsListPageComponent } from './pages/planets/sw-planets-list-page/sw-planets-list-page.component';
+import { SwSpeciesListPageComponent } from './pages/species/sw-species-list-page/sw-species-list-page.component';
+import { SwSpeciesViewPageComponent } from './pages/species/sw-species-view-page/sw-species-view-page.component';
 import { SwPageComponent } from './pages/sw-page/sw-page.component';
 
 export default [
@@ -29,6 +33,22 @@ export default [
             component: SwPeopleResourceListPageComponent,
           },
           { path: ':id', component: SwPersonViewPageComponent },
+        ],
+      },
+
+      {
+        path: 'species',
+        children: [
+          { path: '', component: SwSpeciesListPageComponent },
+          { path: ':id', component: SwSpeciesViewPageComponent },
+        ],
+      },
+
+      {
+        path: 'planets',
+        children: [
+          { path: '', component: SwPlanetsListPageComponent },
+          { path: ':id', component: SwPlanetViewPageComponent },
         ],
       },
     ],

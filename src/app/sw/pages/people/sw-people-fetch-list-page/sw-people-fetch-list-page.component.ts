@@ -10,6 +10,7 @@ import { switchMap } from 'rxjs';
 import { SwPeopleListComponent } from '../../../components/people/sw-people-list/sw-people-list.component';
 import { SearchData } from '../../../models';
 import { PeopleFetchService } from '../../../services/people-fetch.service';
+import { createSwNavigateFn } from '../../helpers';
 
 @Component({
   selector: 'app-sw-people-fetch-list-page',
@@ -51,14 +52,9 @@ export class SwPeopleFetchListPageComponent {
     });
   }
 
-  protected onSelect(id: string): void {
-    const idNumber = new URL(id).pathname
-      .split('/')
-      .reverse()
-      .find((path) => path !== '');
+  private readonly natigate = createSwNavigateFn();
 
-    this.router.navigate(['..', idNumber], {
-      relativeTo: this.activatedRoute,
-    });
+  protected onSelect(id: string): void {
+    this.natigate(id);
   }
 }

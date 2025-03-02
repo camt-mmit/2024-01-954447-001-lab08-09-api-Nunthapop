@@ -1,7 +1,8 @@
 /* You can add global styles to this file, and also import other style files */
 
 :root {
-  --app-font: 'Roboto Flex', 'Noto+Sans Thai Looped';
+  --app-font:
+    'Roboto Flex', 'Noto Sans Thai Looped', 'Noto Emoji', 'Noto Color Emoji';
   --app-mono-space-font: 'Roboto Mono';
   --app-font-size: 16px;
 
@@ -16,12 +17,19 @@
 
 html,
 body {
+  box-sizing: border-box;
   margin: 0px;
   padding: 0px;
 
   height: 100%;
 
   background-color: var(--app-background-color);
+}
+
+button,
+input {
+  font-family: inherit;
+  font-size: inherit;
 }
 
 .app-cl-main-content {
@@ -77,6 +85,12 @@ body {
   }
 }
 
+.app-st-hide-navigation {
+  .app-cmp-links {
+    display: none !important;
+  }
+}
+
 .app-cl-code,
 .app-cl-number {
   font-family: var(--app-mono-space-font);
@@ -92,15 +106,18 @@ body {
 }
 
 .app-cl-button {
-  display: flex;
+  display: inline-flex;
   flex-direction: row;
   column-gap: 4px;
   align-items: center;
 
   font-weight: bold;
 
+  cursor: pointer;
+
   &:disabled {
-    opacity: 0.25;
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 }
 
@@ -139,7 +156,7 @@ body {
   display: flex;
   flex-direction: column;
 
-  & > .app-cl-control {
+  & > .app-cl-field {
     box-sizing: border-box;
 
     display: flex;
@@ -153,7 +170,7 @@ body {
       width: 12ch;
     }
 
-    & > :is(input, textarea) {
+    & > .app-cl-control {
       flex: 1 0 auto;
     }
   }

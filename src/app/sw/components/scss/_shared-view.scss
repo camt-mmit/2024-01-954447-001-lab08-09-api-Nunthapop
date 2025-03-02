@@ -1,0 +1,23 @@
+.-cl-number-data {
+  display: inline-block;
+  width: 10ch;
+  text-align: right;
+}
+
+.-cl-link {
+  text-decoration: none;
+  color: var(--app-primary-color);
+
+  & > * {
+    font-size: inherit;
+  }
+}
+
+.-cl-container {
+  margin: 0px;
+  padding: 0px;
+
+  &:is(ul) {
+    padding-left: 18px;
+  }
+}

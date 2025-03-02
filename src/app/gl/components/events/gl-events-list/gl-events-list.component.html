@@ -1,0 +1,50 @@
+<form [formGroup]="formGroup()" (ngSubmit)="onSubmit()" class="-cmp-search-box">
+  <label class="-cl-field">
+    <b>Search</b>
+    <input
+      type="text"
+      inputmode="search"
+      enterkeyhint="search"
+      formControlName="q"
+      class="-cl-control"
+    />
+  </label>
+  <button type="button" (click)="clear()" class="app-cl-button app-cl-warn">
+    <i class="material-symbols-outlined">close</i>
+  </button>
+</form>
+<div class="-cmp-actions-bar">
+  @if (isLoading()) {
+    <app-loading />
+  }
+  <div class=".-cl-actions-group -cl-meta">
+    <button type="button" (click)="reload.emit()" class="app-cl-button">
+      <i class="material-symbols-outlined">sync</i>
+    </button>
+  </div>
+</div>
+@if (parsedData(); as parsedData) {
+  @if (parsedData.items.length > 0) {
+    <div class="-cmp-resoures-list">
+      @for (item of parsedData.items; track item.id) {
+        <section class="-cmp-resource">
+          <details>
+            <summary>
+              <h3>{{ item.summary }}</h3>
+            </summary>
+            <p>
+              @if (item.description) {
+                {{ item.description }}
+              } @else {
+                [<i>No description</i>]
+              }
+            </p>
+          </details>
+          <footer>{{ item.displayDateTime }}</footer>
+        </section>
+      }
+    </div>
+  } @else {
+    <p>Not found!!</p>
+  }
+}

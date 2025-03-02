@@ -1,5 +1,10 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import {
+  ActivatedRoute,
+  RouterLink,
+  RouterLinkActive,
+  RouterOutlet,
+} from '@angular/router';
 
 @Component({
   selector: 'app-sw-page',
@@ -8,4 +13,6 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
   styleUrl: './sw-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SwPageComponent {}
+export class SwPageComponent {
+  readonly activatedRoute = inject(ActivatedRoute);
+}

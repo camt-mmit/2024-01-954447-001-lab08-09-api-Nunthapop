@@ -1,0 +1,61 @@
+<form [formGroup]="formGroup()" ngNativeValidate (ngSubmit)="onSubmit()">
+  <fieldset
+    [disabled]="formGroup().disabled"
+    class="app-cmp-data-form -cl-container"
+  >
+    <label class="app-cl-field">
+      <b class="app-cl-title">Summary*</b>
+      <input
+        type="text"
+        formControlName="summary"
+        required
+        class="app-cl-control"
+      />
+    </label>
+
+    <label formGroupName="start" class="app-cl-field">
+      <b class="app-cl-title">Start*</b>
+      <input
+        type="datetime-local"
+        formControlName="dateTime"
+        required
+        class="app-cl-control"
+      />
+    </label>
+
+    <label formGroupName="end" class="app-cl-field">
+      <b class="app-cl-title">End*</b>
+      <input
+        type="datetime-local"
+        formControlName="dateTime"
+        required
+        class="app-cl-control"
+      />
+    </label>
+
+    <label class="app-cl-field">
+      <b class="app-cl-title">Description</b>
+      <textarea
+        formControlName="description"
+        rows="5"
+        class="app-cl-control"
+      ></textarea>
+    </label>
+
+    <div class="-cmp-actions-bar">
+      <button type="submit" class="app-cl-button app-cl-primary">
+        <i class="material-symbols-outlined">send</i>
+        Create
+      </button>
+
+      <button
+        type="button"
+        (click)="formCancel.emit()"
+        class="app-cl-button app-cl-warn -cl-meta"
+      >
+        <i class="material-symbols-outlined">cancel</i>
+        Cancel
+      </button>
+    </div>
+  </fieldset>
+</form>

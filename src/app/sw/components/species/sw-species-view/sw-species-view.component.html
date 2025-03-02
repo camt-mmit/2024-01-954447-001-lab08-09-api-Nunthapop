@@ -1,0 +1,71 @@
+<dl class="app-cmp-data-list">
+  <dt class="app-cl-title">Name</dt>
+  <dd>
+    {{ parsedData().name }}
+    <a
+      href="https://www.starwars.com/databank/{{ normalizedName() }}"
+      target="_blank"
+      class="-cl-link"
+    >
+      <i class="material-symbols-outlined">open_in_new</i>
+    </a>
+  </dd>
+
+  <dt class="app-cl-title">Classification</dt>
+  <dd>{{ parsedData().classification }}</dd>
+
+  <dt class="app-cl-title">Designation</dt>
+  <dd>{{ parsedData().designation }}</dd>
+
+  <dt class="app-cl-title">Average Height</dt>
+  <dd>
+    <ng-container *appSwNumber="let value of parsedData().average_height">
+      <span class="app-cl-number -cl-number-data">{{ value | number }}</span>
+      cm
+    </ng-container>
+  </dd>
+
+  <dt class="app-cl-title">Average Lifespan</dt>
+  <dd>
+    <ng-container *appSwNumber="let value of parsedData().average_lifespan">
+      <span class="app-cl-number -cl-number-data">{{ value | number }}</span>
+      years
+    </ng-container>
+  </dd>
+
+  <dt class="app-cl-title">Homeworld</dt>
+  <dd>
+    <a
+      *appSwResource="let $homeworld of parsedData().homeworld()"
+      [href]="$homeworld.id"
+      (click)="$event.preventDefault()"
+      (click)="onLinkClick($homeworld.id)"
+      class="-cl-link"
+      >{{ $homeworld.name }}</a
+    >
+  </dd>
+
+  <dt class="app-cl-title">Species</dt>
+  <dd>
+    <ul class="-cl-container">
+      @for (person of parsedData().people; track $index) {
+        <li>
+          <a
+            *appSwResource="let $person of person()"
+            [href]="$person.id"
+            (click)="$event.preventDefault()"
+            (click)="onLinkClick($person.id)"
+            class="-cl-link"
+            >{{ $person.name }}</a
+          >
+        </li>
+      }
+    </ul>
+  </dd>
+
+  <dt class="app-cl-title">Created</dt>
+  <dd>{{ parsedData().created | date: 'medium' }}</dd>
+
+  <dt class="app-cl-title">Edited</dt>
+  <dd>{{ parsedData().edited | date: 'medium' }}</dd>
+</dl>

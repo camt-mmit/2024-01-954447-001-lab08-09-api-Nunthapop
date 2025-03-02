@@ -1,0 +1,8 @@
+<app-sw-species-list
+  [data]="resource.value()"
+  [searchData]="searchData()"
+  [isLoading]="resource.isLoading()"
+  (searchDataChange)="onSearch($event)"
+  (itemSelect)="onSelect($event)"
+  class="app-cl-main-content"
+/>

@@ -1,39 +1,80 @@
 <dl class="app-cmp-data-list">
   <dt class="app-cl-title">Name</dt>
-  <dd>{{ parsedData().name }}</dd>
+  <dd>
+    {{ parsedData().name }}
+    <a
+      href="https://www.starwars.com/databank/{{ normalizedName() }}"
+      target="_blank"
+      class="-cl-link"
+    >
+      <i class="material-symbols-outlined">open_in_new</i>
+    </a>
+  </dd>
 
   <dt class="app-cl-title">Gender</dt>
-  <dd>{{ parsedData().gender }}</dd>
+  <dd>
+    {{ parsedData().gender }}
+    {{
+      parsedData().gender === 'male' ? '♂️'
+      : parsedData().gender === 'female' ? '♀️'
+      : ''
+    }}
+  </dd>
 
   <dt class="app-cl-title">Birth Year</dt>
-  <dd>{{ parsedData().birth_year }}</dd>
+  <dd>
+    <span class="app-cl-code">{{ parsedData().birth_year }}</span>
+  </dd>
 
   <dt class="app-cl-title">Height</dt>
-  <dd>{{ parsedData().height }} cm</dd>
+  <dd>
+    <ng-container *appSwNumber="let value of parsedData().height">
+      <span class="app-cl-number -cl-number-data">{{ value | number }}</span>
+      cm
+    </ng-container>
+  </dd>
 
   <dt class="app-cl-title">Mass</dt>
-  <dd>{{ parsedData().mass }} kg</dd>
+  <dd>
+    <ng-container *appSwNumber="let value of parsedData().mass">
+      <span class="app-cl-number -cl-number-data">{{ value | number }}</span>
+      kg
+    </ng-container>
+  </dd>
 
   <dt class="app-cl-title">Homeworld</dt>
   <dd>
-    @switch (parsedData().homeworld()) {
-      @case (undefined) {
-        Loading...
-      }
+    <a
+      *appSwResource="let $homeworld of parsedData().homeworld()"
+      [href]="$homeworld.id"
+      (click)="$event.preventDefault()"
+      (click)="onLinkClick($homeworld.id)"
+      class="-cl-link"
+      >{{ $homeworld.name }}</a
+    >
+  </dd>
 
-      @case (null) {
-        -
-      }
-
-      @default {
-        {{ parsedData().homeworld()?.name }}
+  <dt class="app-cl-title">Species</dt>
+  <dd>
+    @if (parsedData().species.length === 0) {
+      -
+    } @else {
+      @for (species of parsedData().species; track $index) {
+        <a
+          *appSwResource="let $species of species()"
+          [href]="$species.id"
+          (click)="$event.preventDefault()"
+          (click)="onLinkClick($species.id)"
+          class="-cl-link"
+          >{{ $species.name }}</a
+        >
       }
     }
   </dd>
 
   <dt class="app-cl-title">Created</dt>
-  <dd>{{ parsedData().created | date: 'full' }}</dd>
+  <dd>{{ parsedData().created | date: 'medium' }}</dd>
 
   <dt class="app-cl-title">Edited</dt>
-  <dd>{{ parsedData().edited | date: 'full' }}</dd>
+  <dd>{{ parsedData().edited | date: 'medium' }}</dd>
 </dl>

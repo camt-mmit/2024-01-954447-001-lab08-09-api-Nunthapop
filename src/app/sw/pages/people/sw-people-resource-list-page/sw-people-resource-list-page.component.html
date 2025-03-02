@@ -1,7 +1,7 @@
 <app-sw-people-list
-  [data]="dataResource.value()"
+  [data]="resource.value()"
   [searchData]="searchData()"
-  [isLoading]="dataResource.isLoading()"
+  [isLoading]="resource.isLoading()"
   (searchDataChange)="onSearch($event)"
   (itemSelect)="onSelect($event)"
   class="app-cl-main-content"
