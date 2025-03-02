@@ -1,0 +1,12 @@
+<div class="app-cl-main-content">
+  <div class="-cmp-actions-bar">
+    <button type="button" (click)="back()" class="app-cl-button">
+      <i class="material-symbols-outlined">arrow_back</i>
+    </button>
+  </div>
+  @if (data(); as data) {
+    <app-sw-person-view [data]="data" />
+  } @else {
+    <p>Loading...</p>
+  }
+</div>

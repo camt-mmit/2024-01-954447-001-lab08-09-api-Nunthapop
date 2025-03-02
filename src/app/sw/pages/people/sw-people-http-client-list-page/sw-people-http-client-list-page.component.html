@@ -1,0 +1,8 @@
+<app-sw-people-list
+  [data]="data()"
+  [searchData]="searchData()"
+  [isLoading]="isLoading()"
+  (searchDataChange)="onSearch($event)"
+  (itemSelect)="onSelect($event)"
+  class="app-cl-main-content"
+/>

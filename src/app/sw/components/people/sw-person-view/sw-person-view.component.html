@@ -1,0 +1,39 @@
+<dl class="app-cmp-data-list">
+  <dt class="app-cl-title">Name</dt>
+  <dd>{{ parsedData().name }}</dd>
+
+  <dt class="app-cl-title">Gender</dt>
+  <dd>{{ parsedData().gender }}</dd>
+
+  <dt class="app-cl-title">Birth Year</dt>
+  <dd>{{ parsedData().birth_year }}</dd>
+
+  <dt class="app-cl-title">Height</dt>
+  <dd>{{ parsedData().height }} cm</dd>
+
+  <dt class="app-cl-title">Mass</dt>
+  <dd>{{ parsedData().mass }} kg</dd>
+
+  <dt class="app-cl-title">Homeworld</dt>
+  <dd>
+    @switch (parsedData().homeworld()) {
+      @case (undefined) {
+        Loading...
+      }
+
+      @case (null) {
+        -
+      }
+
+      @default {
+        {{ parsedData().homeworld()?.name }}
+      }
+    }
+  </dd>
+
+  <dt class="app-cl-title">Created</dt>
+  <dd>{{ parsedData().created | date: 'full' }}</dd>
+
+  <dt class="app-cl-title">Edited</dt>
+  <dd>{{ parsedData().edited | date: 'full' }}</dd>
+</dl>
