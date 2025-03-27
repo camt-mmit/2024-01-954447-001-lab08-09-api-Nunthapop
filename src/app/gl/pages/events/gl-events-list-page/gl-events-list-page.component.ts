@@ -1,35 +1,37 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import {
+  ActivatedRoute,
+  Router,
+  RouterLink,
+  RouterLinkActive,
+} from '@angular/router';
 import { GlEventsListComponent } from '../../../components/events/gl-events-list/gl-events-list.component';
 import { EventsQueryParams } from '../../../models/events';
-import { EventsService } from '../../../services/events.service';
+import { EventService } from '../../../services/event.service';
 
 @Component({
   selector: 'app-gl-events-list-page',
-  imports: [RouterLink, GlEventsListComponent],
+  imports: [GlEventsListComponent, RouterLink, RouterLinkActive],
   templateUrl: './gl-events-list-page.component.html',
   styleUrl: './gl-events-list-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GlEventsListPageComponent {
-  private readonly service = inject(EventsService);
+  protected service = inject(EventService);
   private readonly activatedRoute = inject(ActivatedRoute);
 
-  private readonly queryParams$ = this.activatedRoute.queryParams;
-
-  protected readonly queryParams = toSignal(this.queryParams$, {
+  protected readonly queryParams = toSignal(this.activatedRoute.queryParams, {
     initialValue: {},
   });
 
-  protected readonly resource = this.service.getAll(this.queryParams);
+  protected readonly dataResource = this.service.getAll(this.queryParams);
 
-  private router = inject(Router);
-
-  protected onQuery(queryParams: EventsQueryParams): void {
+  private readonly router = inject(Router);
+  protected onQueryParamsChange(queryParams: EventsQueryParams): void {
     this.router.navigate([], {
+      queryParams: queryParams,
       replaceUrl: true,
-      queryParams,
     });
   }
 }

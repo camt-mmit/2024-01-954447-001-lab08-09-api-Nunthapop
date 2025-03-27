@@ -1,0 +1,8 @@
+@if(resource.value(); as data){
+  <app-sw-people-list [data]="data" [searchData]="searchData()"
+   [isLoading]="resource.isLoading()"
+    (searchDataChange)="search($event)"
+    (itemSelect)="onItemSelect($event)" />
+} @else {
+  <p>Loading...</p>
+}

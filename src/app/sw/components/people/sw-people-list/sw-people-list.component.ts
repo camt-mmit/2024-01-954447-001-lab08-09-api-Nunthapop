@@ -1,65 +1,46 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  input,
-  output,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import { Person, ResourceList, SearchData } from '../../../models';
+import { parsePersonList } from '../../../helpers';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { LoadingComponent } from '../../../../shared/components/loading/loading.component';
-import { parsePeopleList } from '../../../helpers';
-import { Person, ResourcesList, SearchData } from '../../../models';
 
 @Component({
   selector: 'app-sw-people-list',
-  imports: [ReactiveFormsModule, LoadingComponent],
+  imports: [ReactiveFormsModule],
   templateUrl: './sw-people-list.component.html',
   styleUrl: './sw-people-list.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SwPeopleListComponent {
-  readonly data = input.required<ResourcesList<Person> | undefined>();
+  readonly data = input.required<ResourceList<Person>>();
+  readonly isLoading = input(false)
   readonly searchData = input.required<SearchData>();
-  readonly isLoading = input.required<boolean>();
+
 
   readonly searchDataChange = output<SearchData>();
   readonly itemSelect = output<string>();
 
-  protected readonly parsedData = computed(
-    () => (this.data() ? parsePeopleList(this.data()!) : undefined),
-    {
-      equal: (pre, next) => typeof next === 'undefined' || Object.is(pre, next),
-    },
-  );
+
+  protected parsedData = computed(() => parsePersonList(this.data()))
 
   private readonly fb = inject(FormBuilder).nonNullable;
 
-  protected readonly formGroup = computed(() =>
-    this.fb.group({
-      search: this.fb.control(this.searchData().search ?? '', {
-        updateOn: 'submit',
-      }),
-    }),
-  );
-
-  protected select(id: string): void {
-    if (id) {
-      this.itemSelect.emit(id);
-    }
-  }
+  protected formGroup = computed(()=> this.fb.group({
+    search: this.fb.control(this.searchData().search ?? '',{updateOn:'submit'}),
+  }),);
 
   protected onSubmit(): void {
     this.searchDataChange.emit(this.formGroup().getRawValue());
   }
 
-  protected clear(): void {
-    this.searchDataChange.emit({});
+  protected onPage(url: URL | null): void{
+
+    if(url){
+      this.searchDataChange.emit(Object.fromEntries(url.searchParams))
+    }
+
   }
 
-  protected goto(url: URL | null): void {
-    if (url) {
-      this.searchDataChange.emit(Object.fromEntries(url.searchParams));
-    }
+  protected clear(): void{
+    this.searchDataChange.emit({});
   }
 }

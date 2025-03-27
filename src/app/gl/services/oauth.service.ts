@@ -1,19 +1,16 @@
 import { HttpClient } from '@angular/common/http';
 import {
   computed,
-  CreateComputedOptions,
   EnvironmentProviders,
   inject,
   Injectable,
   InjectionToken,
   makeEnvironmentProviders,
   resource,
-  Signal,
 } from '@angular/core';
 import { catchError, firstValueFrom, of } from 'rxjs';
 import {
   arrayBufferToBase64,
-  extrackJwtClaims,
   randomString,
   sha256,
 } from '../helpers/encryption';
@@ -21,17 +18,19 @@ import {
   AccessTokenData,
   AccessTokenNotFound,
   IdTokenData,
+  KEY_VALUE_STORAGE,
   OauthConfiguration,
   RefreshTokenData,
   StateTokenNotFound,
 } from '../models/services';
-import { StorageService } from './storage.service';
 
-const codeVerifierLength = 54;
+const storagePrefix = 'oauth';
+
 const stateTokenLength = 32;
-const stateDataTtl = 10 * 60 * 1000; // milli-second
+const codeVerifierLength = 54;
 
-const latency = 10 * 1000; // milli-second
+const stateDataTtl = 10 * 60 * 1000; // 10 minutes
+const latency = 1000 * 10;
 
 export const OAUTH_CONFIGURATION = new InjectionToken<OauthConfiguration>(
   'oauth-configuration',
@@ -43,7 +42,6 @@ export function provideOauth(config: OauthConfiguration): EnvironmentProviders {
       provide: OAUTH_CONFIGURATION,
       useValue: config,
     },
-
     OauthService,
   ]);
 }
@@ -54,7 +52,7 @@ interface StoredData {
 
 interface StoredAccessTokenData
   extends Omit<AccessTokenData, 'refresh_token' | 'id_token'>,
-  StoredData { }
+    StoredData {}
 
 type StoredRefreshTokenData = RefreshTokenData;
 
@@ -67,28 +65,81 @@ interface StateData<T extends object = object> {
 
 interface StoredStateData<T extends StateData['state'] = StateData['state']>
   extends StateData<T>,
-  StoredData { }
+    StoredData {}
 
 @Injectable()
 export class OauthService {
   private readonly config = inject(OAUTH_CONFIGURATION);
-  private readonly storage = inject(StorageService);
+  private readonly storage = inject(KEY_VALUE_STORAGE);
   private readonly http = inject(HttpClient);
 
-  private readonly storedRefreshTokenDataKey =
-    `oauth-${this.config.name}-refresh-token` as const;
+  private readonly storageStateDataKey =
+    `${storagePrefix}-${this.config.name}-state-data` as const;
 
-  private readonly storedIdTokenDataKey =
-    `oauth-${this.config.name}-id-token` as const;
+  private readonly storeRefreshTokenDataKey =
+    `${storagePrefix}-${this.config.name}-refresh-token-data` as const;
 
-  private readonly storedParsedIdTokenDataKey =
-    `oauth-${this.config.name}-parsed-id-token` as const;
+  private readonly storeAccessTokenDataKey =
+    `${storagePrefix}-${this.config.name}-access-token-data` as const;
 
-  private readonly storedAccessTokenDataKey =
-    `oauth-${this.config.name}-access-token` as const;
+  private async fetchRefreshTokenData(): Promise<StoredRefreshTokenData | null> {
+    return this.storage.get<StoredRefreshTokenData>(
+      this.storeRefreshTokenDataKey,
+    );
+  }
+  private async storeRefreshTokenData(
+    refreshTokenData: RefreshTokenData,
+  ): Promise<StoredRefreshTokenData> {
+    await this.storage.set<StoredRefreshTokenData>(
+      this.storeRefreshTokenDataKey,
+      refreshTokenData,
+    );
 
-  private readonly storedStateDataKey =
-    `oauth-${this.config.name}-states` as const;
+    return refreshTokenData;
+  }
+
+  private async removeRefreshTokenData(): Promise<void> {
+    return this.storage.remove(this.storeRefreshTokenDataKey);
+  }
+
+  private async refreshAccessTokenData(): Promise<StoredAccessTokenData | null> {
+    const refreshTokenData = await this.fetchRefreshTokenData();
+
+    if (refreshTokenData) {
+      const accessTokenData = await firstValueFrom(
+        this.http
+          .post<AccessTokenData>(this.config.accessTokenUrl, {
+            client_id: this.config.clientId,
+            client_secret: this.config.clientSecret,
+            grant_type: 'refresh_token',
+            refresh_token: refreshTokenData,
+          })
+          .pipe(
+            catchError((error) => {
+              console.error(error?.error ?? error);
+
+              return of(null);
+            }),
+          ),
+      );
+      if (accessTokenData !== null) {
+        return await this.storeAccessTokenData(accessTokenData);
+      }
+    }
+    return null;
+  }
+
+  async getAccessTokenData(): Promise<StoredAccessTokenData | null> {
+    const storedAccessTokenData = await this.fetchAccessTokenData();
+
+    if (
+      storedAccessTokenData &&
+      storedAccessTokenData.expiredAt >= Date.now()
+    ) {
+      return storedAccessTokenData;
+    }
+    return this.refreshAccessTokenData();
+  }
 
   private readonly accessTokenResource = resource({
     loader: async () => (await this.getAccessTokenData())?.access_token ?? null,
@@ -101,246 +152,118 @@ export class OauthService {
   readonly ready = computed(() => {
     const accessToken = this.accessToken();
 
-    return typeof accessToken === 'undefined' ? undefined : (
-      accessToken !== null
-    );
+    return typeof accessToken === 'undefined'
+      ? undefined
+      : accessToken !== null;
   });
 
-  private readonly storedIdTokenResource = resource({
-    loader: async () => await this.fetchIdTokenData(),
-  });
-
-  private readonly idToken = computed(this.storedIdTokenResource.value, {
-    equal: (pre, next) => typeof next === 'undefined' || Object.is(pre, next),
-  });
-
-  // Refresh Token Storage
-  private async storeRefreshTokenData(
-    refreshTokenData: RefreshTokenData,
-  ): Promise<StoredRefreshTokenData> {
-    await this.storage.set(
-      this.storedRefreshTokenDataKey,
-      refreshTokenData as StoredRefreshTokenData,
-    );
-
-    return refreshTokenData as StoredRefreshTokenData;
-  }
-
-  private async fetchRefreshTokenData(): Promise<StoredRefreshTokenData | null> {
-    return await this.storage.get<StoredRefreshTokenData>(
-      this.storedRefreshTokenDataKey,
+  private async fetchAccessTokenData(): Promise<StoredAccessTokenData | null> {
+    return await this.storage.get<StoredAccessTokenData>(
+      this.storeAccessTokenDataKey,
     );
   }
-
-  private async removeRefreshTokenData(): Promise<void> {
-    await this.storage.remove(this.storedRefreshTokenDataKey);
-  }
-
-  // ID Token Storage
-  private async storeIdTokenData(
-    idTokenData: IdTokenData,
-  ): Promise<StoredIdTokenData> {
-    await this.storage.set(
-      this.storedIdTokenDataKey,
-      idTokenData as StoredIdTokenData,
-    );
-
-    await this.storage.set(this.storedParsedIdTokenDataKey, {
-      ...(await this.storage.get<object>(this.storedParsedIdTokenDataKey)),
-      ...extrackJwtClaims<object>(idTokenData),
-    });
-
-    this.storedIdTokenResource.set(idTokenData);
-
-    return idTokenData;
-  }
-
-  private async fetchIdTokenData(): Promise<StoredIdTokenData | null> {
-    return await this.storage.get<StoredIdTokenData>(this.storedIdTokenDataKey);
-  }
-
-  private async removeIdTokenData(): Promise<void> {
-    await this.storage.remove(this.storedParsedIdTokenDataKey);
-    await this.storage.remove(this.storedIdTokenDataKey);
-
-    this.storedIdTokenResource.set(null);
-  }
-
-  private async fetchParsedIdTokenData(): Promise<unknown> {
-    return await this.storage.get(this.storedParsedIdTokenDataKey);
-  }
-
-  // Access Token Storage
   private async storeAccessTokenData(
     accessTokenData: AccessTokenData,
   ): Promise<StoredAccessTokenData> {
-    const { refresh_token, id_token, ...restAccessTokenData } = accessTokenData;
+    const { refresh_token, ...restAccessTokenData } = accessTokenData;
 
     if (refresh_token) {
       await this.storeRefreshTokenData(refresh_token);
     }
 
-    if (id_token) {
-      await this.storeIdTokenData(id_token);
-    }
-
-    const storedAccessTokenData = {
+    const storedAccessTokenData: StoredAccessTokenData = {
       ...restAccessTokenData,
-      expiredAt: Date.now() + restAccessTokenData.expires_in * 1000 - latency,
+      expiredAt: Date.now() + accessTokenData.expires_in * 1000 - latency,
     };
 
-    await this.storage.set<StoredAccessTokenData>(
-      this.storedAccessTokenDataKey,
-      storedAccessTokenData,
-    );
+    await this.storage.set(this.storeAccessTokenDataKey, storedAccessTokenData);
 
     this.accessTokenResource.set(storedAccessTokenData.access_token);
 
     return storedAccessTokenData;
   }
 
-  private async fetchAccessTokenData(): Promise<StoredAccessTokenData | null> {
-    return await this.storage.get<StoredAccessTokenData>(
-      this.storedAccessTokenDataKey,
-    );
+  async getAccessTokenHeaders(): Promise<{Authorization: string}>{
+    const storedAccessTokenData = await this.getAccessTokenData();
+
+    if(storedAccessTokenData?.access_token){
+      const { token_type, access_token } = storedAccessTokenData;
+
+      return {
+        Authorization: `${token_type[0].toUpperCase()}${token_type.slice(1)} ${access_token}`
+      }
+    }
+    throw new AccessTokenNotFound();
+
+
   }
 
   private async removeAccessTokenData(): Promise<void> {
-    await this.storage.remove(this.storedAccessTokenDataKey);
-
+    await this.storage.remove(this.storeAccessTokenDataKey);
     this.accessTokenResource.set(null);
   }
 
-  /**
-   * Get the new access token by using refresh token.
-   */
-  private async refreshAccessTokenData(): Promise<StoredAccessTokenData | null> {
-    const refreshToken = await this.fetchRefreshTokenData();
-
-    if (refreshToken) {
-      const accessTokenData = await firstValueFrom(
-        this.http
-          .post<AccessTokenData>(this.config.accessTokenUrl, {
-            client_id: this.config.clientId,
-            client_secret: this.config.clientSecret,
-            grant_type: 'refresh_token',
-            refresh_token: refreshToken,
-          })
-          .pipe(
-            catchError((error) => {
-              console.error(error?.error ?? error);
-
-              return of(null);
-            }),
-          ),
-      );
-
-      if (accessTokenData) {
-        return await this.storeAccessTokenData(accessTokenData);
-      }
-    }
-
-    return null;
-  }
-
-  async getAccessTokenData(): Promise<StoredAccessTokenData | null> {
-    const storedAccessTokenData = await await this.fetchAccessTokenData();
-
-    if (
-      storedAccessTokenData &&
-      storedAccessTokenData.expiredAt >= Date.now()
-    ) {
-      return storedAccessTokenData;
-    } else {
-      return await this.refreshAccessTokenData();
-    }
-  }
-
-  async getAuthorizationHeaders(): Promise<{
-    Authorization: `${string} ${string}`;
-  }> {
-    const accessTokenData = await this.getAccessTokenData();
-
-    if (accessTokenData) {
-      const { token_type, access_token } = accessTokenData;
-
-      return {
-        Authorization:
-          `${token_type[0].toUpperCase()}${token_type.slice(1)} ${access_token}` as const,
-      };
-    }
-
-    throw new AccessTokenNotFound();
-  }
-
-  // State Data Storage
-  private async fetchStateData<
-    T extends StateData['state'] = StateData['state'],
-  >(stateToken: string): Promise<StateData<T> | null> {
+  private async fetchStateData<T extends StateData['state']>(
+    stateToken: string,
+  ): Promise<StoredStateData<T> | null> {
     const storedStateDataRecord =
-      (await this.storage.get<Record<string, StoredStateData<T>>>(
-        this.storedStateDataKey,
+      (await this.storage.get<Record<string, StoredStateData>>(
+        this.storageStateDataKey,
       )) ?? {};
 
     const now = Date.now();
-    const entries = Object.entries(storedStateDataRecord);
-    const avaliableEntries = entries.filter(
-      ([, value]) => value.expiredAt >= now,
+
+    const remainStoredStateDataRecord = Object.fromEntries(
+      Object.entries(storedStateDataRecord).filter(
+        ([key, value]) => value.expiredAt >= now,
+      ),
     );
-    const avaliableStoredStateDataRecord = Object.fromEntries(avaliableEntries);
 
-    if (entries.length !== avaliableEntries.length) {
-      await this.storage.set(
-        this.storedStateDataKey,
-        avaliableStoredStateDataRecord,
-      );
-    }
+    await this.storeStateDataRecord(remainStoredStateDataRecord);
 
-    return avaliableStoredStateDataRecord[stateToken] ?? null;
+    return (storedStateDataRecord[stateToken] as StoredStateData<T>) ?? null;
   }
 
   private async storeStateData<T extends StateData['state']>(
     stateToken: string,
     stateData: StateData<T>,
-  ): Promise<void> {
+  ): Promise<StoredStateData<T>> {
     const storedStateDataRecord =
-      (await this.storage.get<Record<string, StoredStateData<T>>>(
-        this.storedStateDataKey,
+      (await this.storage.get<Record<string, StoredStateData>>(
+        this.storageStateDataKey,
       )) ?? {};
-
-    storedStateDataRecord[stateToken] = {
+    const storedStateData: StoredStateData<T> = {
       ...stateData,
       expiredAt: Date.now() + stateDataTtl,
     };
+    storedStateDataRecord[stateToken] = storedStateData;
 
-    return await this.storage.set(
-      this.storedStateDataKey,
-      storedStateDataRecord,
-    );
+    await this.storeStateDataRecord(storedStateDataRecord);
+    return storedStateData;
   }
 
   private async removeStateData(stateToken: string): Promise<void> {
     const storedStateDataRecord =
       (await this.storage.get<Record<string, StoredStateData>>(
-        this.storedStateDataKey,
+        this.storageStateDataKey,
       )) ?? {};
+    delete storedStateDataRecord[stateToken];
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { [stateToken]: _removed, ...remainStoredStateDataRecord } =
-      storedStateDataRecord;
-
-    if (Object.keys(remainStoredStateDataRecord).length === 0) {
-      await this.clearStateData();
-    } else {
-      await this.storage.set(
-        this.storedStateDataKey,
-        remainStoredStateDataRecord,
-      );
-    }
+    return await this.storeStateDataRecord(storedStateDataRecord);
   }
 
-  private async clearStateData(): Promise<void> {
-    await this.storage.remove(this.storedStateDataKey);
+  private async clearStateDataRecord(): Promise<void> {
+    return await this.storage.remove(this.storageStateDataKey);
+  }
+
+  private async storeStateDataRecord(
+    record: Record<string, StateData>,
+  ): Promise<void> {
+    if (Object.keys(record).length === 0) {
+      return await this.clearStateDataRecord();
+    } else {
+      return await this.storage.set(this.storageStateDataKey, record);
+    }
   }
 
   private async createStateData(
@@ -359,26 +282,25 @@ export class OauthService {
     return { stateToken, codeChallenge };
   }
 
-  async getAuthorizationUrl<T extends StateData['state']>(
+  async getAuthorizationCodeUrl<T extends StateData['state']>(
     scopes: readonly string[],
-    { state = {} as T, additionalParams = {} as Record<string, string> } = {},
+    { state = {} as T, additionalParam = {} as Record<string, string> } = {},
   ): Promise<URL | null> {
-    const authorizationCodeUrl = this.config.authorizationCodeUrl;
+    if (this.config.authorizationCodeUrl) {
+      const url = new URL(this.config.authorizationCodeUrl);
 
-    if (authorizationCodeUrl) {
       const { stateToken, codeChallenge } = await this.createStateData(state);
 
-      const url = new URL(authorizationCodeUrl);
-
       url.searchParams.set('client_id', this.config.clientId);
+      url.searchParams.set('redirect_uri', this.config.redirectUri);
       url.searchParams.set('response_type', 'code');
       url.searchParams.set('scope', scopes.join(' '));
-      url.searchParams.set('state', stateToken);
       url.searchParams.set('code_challenge', codeChallenge);
       url.searchParams.set('code_challenge_method', 'S256');
-      url.searchParams.set('redirect_uri', this.config.redirectUri);
+      url.searchParams.set('state', stateToken);
+      //TODO : code_challenge, code_challenge_method
 
-      Object.entries(additionalParams).forEach(([key, value]) =>
+      Object.entries(additionalParam).forEach(([key, value]) =>
         url.searchParams.set(key, value),
       );
 
@@ -388,16 +310,14 @@ export class OauthService {
     }
   }
 
-  async exchangeAuthorizationcode<T extends StateData['state']>(
-    authorizaitonCode: string,
+  async exchangeAuthorizationCode<T extends StateData['state']>(
+    authorizationCode: string,
     stateToken: string,
   ): Promise<T> {
     const stateData = await this.fetchStateData<T>(stateToken);
 
     if (stateData === null) {
-      throw new StateTokenNotFound(stateToken, {
-        cause: { authorizaitonCode },
-      });
+      throw new StateTokenNotFound(stateToken);
     }
 
     await this.storeAccessTokenData(
@@ -405,68 +325,23 @@ export class OauthService {
         this.http.post<AccessTokenData>(this.config.accessTokenUrl, {
           client_id: this.config.clientId,
           client_secret: this.config.clientSecret,
-          code: authorizaitonCode,
+          code: authorizationCode,
           code_verifier: stateData.codeVerifier,
           grant_type: 'authorization_code',
           redirect_uri: this.config.redirectUri,
         }),
       ),
     );
-
     await this.removeStateData(stateToken);
 
     return stateData.state;
   }
 
-  private readonly parsedIdToken = resource({
-    request: this.idToken,
-
-    loader: async () => await this.fetchParsedIdTokenData(),
-  }).value.asReadonly();
-
-  computedParsedIdToken<R>(
-    options?: CreateComputedOptions<R | null | undefined>,
-  ): Signal<R | null | undefined>;
-
-  computedParsedIdToken<T, R>(
-    computation: (parsedIdToken: T | null | undefined) => R,
-    options?: CreateComputedOptions<R>,
-  ): Signal<R>;
-
-  computedParsedIdToken<T, R>(
-    computationOrOptions?:
-      | ((parsedIdToken: T | null | undefined) => R)
-      | CreateComputedOptions<R | null | undefined>,
-    undefinedOroptions?: CreateComputedOptions<R | null | undefined>,
-  ) {
-    const { computation, options } =
-      typeof computationOrOptions === 'function' ?
-        {
-          computation: computationOrOptions,
-          options: undefinedOroptions,
-        }
-        : {
-          computation: undefined,
-          options:
-            typeof computationOrOptions !== 'undefined' ? computationOrOptions
-              : undefinedOroptions,
-        };
-
-    return computed(() => {
-      if (typeof computation === 'function') {
-        return computation(this.parsedIdToken() as T | null | undefined);
-      } else {
-        return this.parsedIdToken() as R | null | undefined;
-      }
-    }, options);
-  }
-
   async clear(): Promise<void> {
     await Promise.all([
       this.removeRefreshTokenData(),
-      this.removeIdTokenData(),
       this.removeAccessTokenData(),
-      this.storage.remove(this.storedStateDataKey),
+      this.storage.remove(this.storageStateDataKey),
     ]);
   }
 }

@@ -1,60 +1,50 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  inject,
-  signal,
-} from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router } from '@angular/router';
-import { switchMap } from 'rxjs';
-import { SwPeopleListComponent } from '../../../components/people/sw-people-list/sw-people-list.component';
-import { SearchData } from '../../../models';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import { Person, ResourceList, SearchData } from '../../../models';
+import { SwPeopleListComponent } from "../../../components/people/sw-people-list/sw-people-list.component";
+import { AsyncPipe } from '@angular/common';
 import { PeopleFetchService } from '../../../services/people-fetch.service';
-import { createSwNavigateFn } from '../../helpers';
+import { ActivatedRoute, Router } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { switchMap, tap } from 'rxjs';
 
 @Component({
   selector: 'app-sw-people-fetch-list-page',
   imports: [SwPeopleListComponent],
   templateUrl: './sw-people-fetch-list-page.component.html',
   styleUrl: './sw-people-fetch-list-page.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SwPeopleFetchListPageComponent {
-  private readonly service = inject(PeopleFetchService);
-  private readonly activatedRoute = inject(ActivatedRoute);
+  private readonly service = inject(PeopleFetchService)
+  private readonly activatedRoute = inject(ActivatedRoute)
 
+  protected readonly isLoading = signal(false)
   private readonly queryParams$ = this.activatedRoute.queryParams;
 
-  protected readonly isLoading = signal(true);
 
-  protected readonly data = toSignal(
-    this.queryParams$.pipe(
-      switchMap(async (searchData) => {
-        this.isLoading.set(true);
-        const result = await this.service.getAll(searchData);
-        this.isLoading.set(false);
-        return result;
-      }),
-    ),
-    { initialValue: undefined },
-  );
 
-  protected readonly searchData = toSignal(this.queryParams$, {
-    initialValue: {},
-  });
+  protected readonly data = toSignal(this.queryParams$.pipe(
+    tap(()=>this.isLoading.set(true)),
+    switchMap(async (searchData) => await this.service.getAll(searchData)),
+    tap(()=>this.isLoading.set(false))
 
-  private router = inject(Router);
+  ));
 
-  protected onSearch(searchData: SearchData): void {
+  protected readonly searchData = toSignal(this.queryParams$, {initialValue: {}})
+
+  private readonly router = inject(Router);
+
+  protected search(searchData: SearchData): void{
     this.router.navigate([], {
-      replaceUrl: true,
       queryParams: searchData,
+      replaceUrl: true,
     });
   }
 
-  private readonly natigate = createSwNavigateFn();
-
-  protected onSelect(id: string): void {
-    this.natigate(id);
+  protected onItemSelect(id: string):void {
+    const path = id.split('/').pop();
+    this.router.navigate(['..',path],{
+      relativeTo: this.activatedRoute,
+    })
   }
 }

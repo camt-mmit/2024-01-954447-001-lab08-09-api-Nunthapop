@@ -1,13 +1,7 @@
-import { HttpErrorResponse } from '@angular/common/http';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  inject,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { OauthService } from '../../services/oauth.service';
-import { GlState } from '../gl-page/gl-page.component';
+import { Glpage } from '../gl-page/gl-page.component';
 
 @Component({
   selector: 'app-gl-authorization-page',
@@ -17,57 +11,28 @@ import { GlState } from '../gl-page/gl-page.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GlAuthorizationPageComponent {
-  private readonly activatedRoute = inject(ActivatedRoute);
-  private readonly router = inject(Router);
-
-  protected readonly oauthService = inject(OauthService);
-
-  readonly error = signal(
-    (() => {
-      const error: string | undefined =
-        this.activatedRoute.snapshot.queryParams['error'];
-      const error_description: string | undefined =
-        this.activatedRoute.snapshot.queryParams['error_description'];
-
-      return error || error_description ?
-          { error, error_description }
-        : undefined;
-    })(),
-  );
-
   constructor() {
+    const activatedRoute = inject(ActivatedRoute);
+    const router = inject(Router);
+    const authorizationCode = activatedRoute.snapshot.queryParams[
+      'code'
+    ] as string | undefined;
+
+    const stateToken = activatedRoute.snapshot.queryParams['state'] as
+      | string
+      | undefined;
+
+    const oauthService = inject(OauthService);
+
     (async () => {
-      const { code, state: stateToken } = this.activatedRoute.snapshot
-        .queryParams as { code?: string; state?: string };
+      if (authorizationCode && stateToken) {
+        const state = await oauthService.exchangeAuthorizationCode<Glpage>(
+          authorizationCode,
+          stateToken,
+        );
 
-      if (code && stateToken) {
-        try {
-          const state =
-            await this.oauthService.exchangeAuthorizationcode<GlState>(
-              code,
-              stateToken,
-            );
+        router.navigateByUrl(state.intentedUrl);
 
-          this.router.navigateByUrl(state.intendedUrl, {
-            replaceUrl: true,
-          });
-        } catch (error) {
-          if (error instanceof HttpErrorResponse) {
-            this.error.set(error.error);
-          } else if (error instanceof Error) {
-            this.error.set({
-              error: error.name,
-              error_description: error.message,
-            });
-          }
-
-          throw error;
-        }
-      } else {
-        this.error.set({
-          error: 'bad_response',
-          error_description: `The response doesn't have 'code' or 'state'`,
-        });
       }
     })();
   }

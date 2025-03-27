@@ -1,20 +1,25 @@
 import { signal, Signal, untracked } from '@angular/core';
-import { Person, Planet, Resource, ResourcesList, Species } from './models';
+import { Person, Planet, Resource, ResourceList, Species } from './models';
 
-export const apiUrl = 'https://swapi.dev/api';
+export const apiURL = 'https://swapi.dev/api/';
 
-export async function fetchResource<T extends Resource = Resource>(
-  url: URL,
+export function readonlyArray<T>(values: T[]): readonly T[] {
+  return values;
+}
+
+export async function fetchResource<T>(
+  url: URL | null,
 ): Promise<T | undefined> {
-  const res = await fetch(url);
-
-  if (res.ok) {
+  if (url !== null) {
+    const res = await fetch(url);
     const json = await res.json();
 
-    return json;
-  } else {
-    return undefined;
+    if (res.ok) {
+      return json;
+    }
   }
+
+  return undefined;
 }
 
 export function resourceSignal<T>(
@@ -23,42 +28,37 @@ export function resourceSignal<T>(
 
 export function resourceSignal<T, R>(
   url: URL | null,
-  transform: (value: T) => R,
-): Signal<R | null | undefined>;
+  tranform: (value: T) => R | Promise<R>,
+): Signal<T | null | undefined>;
 
 export function resourceSignal<T, R>(
   url: URL | null,
-  transform?: (value: T) => R,
-): Signal<R | null | undefined> {
+  tranform?: (value: T) => R | Promise<R>,
+): Signal<T | null | undefined> {
   return untracked(() => {
-    const resource = signal<R | null | undefined>(undefined);
+    const resource = signal<T | null | undefined>(undefined);
 
-    if (url === null) {
-      resource.set(null);
-    } else {
-      (async () => {
+    (async () => {
+      if (url !== null) {
         const res = await fetch(url);
+        const json = await res.json();
 
         if (res.ok) {
-          const json = await res.json();
-
-          resource.set(
-            typeof transform !== 'undefined' ? transform(json) : json,
-          );
-        } else {
-          return resource.set(null);
+          return resource.set(tranform ? await tranform(json) : json);
         }
-      })();
-    }
+      }
+
+      return resource.set(null);
+    })();
 
     return resource.asReadonly();
   });
 }
 
 export function parseResource(resource: Resource) {
-  const { created, edited, url } = resource;
-  const id = `swapi:${url
-    .slice(apiUrl.length)
+  const { url, created, edited } = resource;
+  const id = `swapi${url
+    .slice(apiURL.length)
     .split('/')
     .filter((path) => !!path)
     .join('/')}`;
@@ -66,40 +66,34 @@ export function parseResource(resource: Resource) {
   return {
     ...resource,
     id,
+    url: new URL(url),
     created: new Date(created),
     edited: new Date(edited),
-    url: new URL(url),
   } as const;
 }
 
-function parseGenericResourcesList<T extends Resource>(
-  resourcesList: ResourcesList<T>,
+function parseGenericResourceList<T extends Resource>(
+  resourceList: ResourceList<T>,
 ) {
-  const { previous, next } = resourcesList;
-
+  const { previous, next } = resourceList;
   return {
-    ...resourcesList,
-    previous: previous !== null ? new URL(previous) : null,
+    ...resourceList,
+    previous: previous != null ? new URL(previous) : null,
+    next: next !== null ? new URL(next) : null,
+  } as const;
+}
+export function parseResourceList(resourceList: ResourceList<Resource>) {
+  const parsedResourceList = parseGenericResourceList(resourceList);
+  const { previous, next } = resourceList;
+  return {
+    ...resourceList,
+    previous: previous != null ? new URL(previous) : null,
     next: next !== null ? new URL(next) : null,
   } as const;
 }
 
-export function parseResourcesList(resourcesList: ResourcesList<Resource>) {
-  const { results } = resourcesList;
-
-  return {
-    ...parseGenericResourcesList(resourcesList),
-    results: readonlyArray(results.map(parseResource)),
-  } as const;
-}
-
-export function readonlyArray<T>(ar: T[]): readonly T[] {
-  return ar;
-}
-
 export function parsePerson(resource: Person) {
   const { homeworld, films, species, starships, vehicles } = resource;
-
   return {
     ...resource,
     ...parseResource(resource),
@@ -111,52 +105,63 @@ export function parsePerson(resource: Person) {
   } as const;
 }
 
-export function parsePeopleList(resourcesList: ResourcesList<Person>) {
-  const { results } = resourcesList;
-
+export function parsePersonList(resourceList: ResourceList<Person>) {
+  const parsedResourceList = parseGenericResourceList(resourceList);
+  const { results } = parsedResourceList;
   return {
-    ...parseGenericResourcesList(resourcesList),
+    ...parsedResourceList,
     results: readonlyArray(results.map(parsePerson)),
   } as const;
 }
 
-export function parseSpecies(resource: Species) {
-  const { homeworld, people, films } = resource;
-
+export function parseSpecies(data: any): Species {
+  if (!data) return {} as Species; // ✅ ป้องกัน undefined
   return {
-    ...resource,
-    ...parseResource(resource),
-    homeworld: homeworld !== null ? new URL(homeworld) : null,
-    people: readonlyArray(people.map((url) => new URL(url))),
-    films: readonlyArray(films.map((url) => new URL(url))),
-  } as const;
+    name: data.name || '',
+    classification: data.classification || '',
+    designation: data.designation || '',
+    average_height: data.average_height || '',
+    skin_colors: data.skin_colors || '',
+    hair_colors: data.hair_colors || '',
+    eye_colors: data.eye_colors || '',
+    average_lifespan: data.average_lifespan || '',
+    homeworld: data.homeworld || '',
+    language: data.language || '',
+    people: data.people || [],
+    films: data.films || [],
+    created: data.created || '',
+    edited: data.edited || '',
+    url: data.url || '',
+  };
 }
 
-export function parseSpeciesList(resourcesList: ResourcesList<Species>) {
-  const { results } = resourcesList;
-
-  return {
-    ...parseGenericResourcesList(resourcesList),
-    results: readonlyArray(results.map(parseSpecies)),
-  } as const;
+export function parseSpeciesList(data: any): Species[] {
+  if (!data || !Array.isArray(data.results)) {
+    console.warn('Invalid species list format:', data);
+    return [];
+  }
+  return data.results.map((item: any) => parseSpecies(item));
 }
 
-export function parsePlanet(resource: Planet) {
-  const { residents, films } = resource;
-
+export function parsePlanet(data: any): Planet {
   return {
-    ...resource,
-    ...parseResource(resource),
-    residents: readonlyArray(residents.map((url) => new URL(url))),
-    films: readonlyArray(films.map((url) => new URL(url))),
-  } as const;
+    name: data.name || '',
+    rotation_period: data.rotation_period || '',
+    orbital_period: data.orbital_period || '',
+    diameter: data.diameter || '',
+    climate: data.climate || '',
+    gravity: data.gravity || '',
+    terrain: data.terrain || '',
+    surface_water: data.surface_water || '',
+    population: data.population || '',
+    residents: data.residents || [],
+    films: data.films || [],
+    created: data.created || '',
+    edited: data.edited || '',
+    url: data.url || '',
+  };
 }
 
-export function parsePlanetsList(resourcesList: ResourcesList<Planet>) {
-  const { results } = resourcesList;
-
-  return {
-    ...parseGenericResourcesList(resourcesList),
-    results: readonlyArray(results.map(parsePlanet)),
-  } as const;
+export function parsePlanetsList(data: any): Planet[] {
+  return data.results.map((item: any) => parsePlanet(item));
 }

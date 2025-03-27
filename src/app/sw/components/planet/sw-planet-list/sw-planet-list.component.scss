@@ -1,0 +1,24 @@
+
+.planets-list {
+  padding: 20px;
+}
+
+.planet-item {
+  border: 1px solid #ccc;
+  padding: 10px;
+  margin: 10px 0;
+}
+
+.pagination {
+  margin-top: 20px;
+}
+
+button {
+  padding: 5px 10px;
+  margin: 0 5px;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

@@ -1,55 +1,28 @@
-import { DatePipe, DecimalPipe } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  input,
-  output,
-} from '@angular/core';
-import { SwNumberDirective } from '../../../directives/sw-number.directive';
-import { SwResourceDirective } from '../../../directives/sw-resource.directive';
-import {
-  parsePerson,
-  parsePlanet,
-  parseSpecies,
-  readonlyArray,
-  resourceSignal,
-} from '../../../helpers';
-import { Person } from '../../../models';
+import { AsyncPipe, DatePipe } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, input, resource } from '@angular/core';
+import { Person, Resource } from '../../../models';
+import { fetchResource, parsePerson, parseResource, readonlyArray, resourceSignal } from '../../../helpers';
 
 @Component({
   selector: 'app-sw-person-view',
-  imports: [DatePipe, DecimalPipe, SwResourceDirective, SwNumberDirective],
+  imports: [DatePipe],
   templateUrl: './sw-person-view.component.html',
   styleUrl: './sw-person-view.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SwPersonViewComponent {
-  readonly data = input.required<Person>();
+readonly data = input.required<Person>();
 
-  readonly linkClick = output<string>();
+  protected readonly parsedData = computed(()=>{
+    const parsedData = parsePerson(this.data())
+    const {homeworld,species, ...rest} = parsedData;
 
-  readonly parsedData = computed(() => {
-    const { homeworld, species, ...rest } = parsePerson(this.data());
-
-    return {
+    return{
       ...rest,
-      homeworld: resourceSignal(homeworld, parsePlanet),
-      species: readonlyArray(
-        species.map((url) => resourceSignal(url, parseSpecies)),
-      ),
-    } as const;
-  });
+      homeworld: resourceSignal(homeworld, parseResource),
+      species: readonlyArray(species.map((value)=>resourceSignal(value, parseResource)),)
+    };
+  })
 
-  readonly normalizedName = computed(() =>
-    this.parsedData()
-      .name.replaceAll(/[\s']+/g, '-')
-      .toLocaleLowerCase(),
-  );
 
-  protected onLinkClick(id: string | undefined): void {
-    if (id) {
-      this.linkClick.emit(id);
-    }
-  }
 }

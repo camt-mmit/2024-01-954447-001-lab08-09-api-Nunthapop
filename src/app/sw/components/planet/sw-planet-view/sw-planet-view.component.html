@@ -1,0 +1,16 @@
+<!-- src/app/sw/sw-planet-view/sw-planet-view.component.html -->
+<div class="planet-view">
+  @if (!planet()) {
+    <p>Loading planet details...</p>
+  } @else {
+    <h2>{{ planet()!.name }}</h2>
+    <p>Rotation Period: {{ planet()!.rotation_period }} hours</p>
+    <p>Orbital Period: {{ planet()!.orbital_period }} days</p>
+    <p>Diameter: {{ planet()!.diameter }} km</p>
+    <p>Climate: {{ planet()!.climate }}</p>
+    <p>Gravity: {{ planet()!.gravity }}</p>
+    <p>Terrain: {{ planet()!.terrain }}</p>
+    <p>Surface Water: {{ planet()!.surface_water }}%</p>
+    <p>Population: {{ planet()!.population }}</p>
+  }
+</div>

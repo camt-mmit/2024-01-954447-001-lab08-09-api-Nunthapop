@@ -7,8 +7,6 @@ import {
   output,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { LoadingComponent } from '../../../../shared/components/loading/loading.component';
-import { readonlyArray } from '../../../helpers';
 import {
   displayEventTimeRange,
   parseEventsList,
@@ -16,23 +14,21 @@ import {
 import { EventsList, EventsQueryParams } from '../../../models/events';
 
 function parseData(data: EventsList) {
-  const parsedEventsList = parseEventsList(data);
-  const { items, ...rest } = parsedEventsList;
+  const parseData = parseEventsList(data);
+  const { items, ...rest } = parseData;
 
   return {
-    ...rest,
-    items: readonlyArray(
-      items.map((item) => ({
-        ...item,
-        displayDateTime: displayEventTimeRange(item),
-      })),
-    ),
+    ...parseData,
+    items: items.map((item) => ({
+      ...item,
+      displayDateTime: displayEventTimeRange(item),
+    })),
   };
 }
 
 @Component({
   selector: 'app-gl-events-list',
-  imports: [ReactiveFormsModule, LoadingComponent],
+  imports: [ReactiveFormsModule],
   templateUrl: './gl-events-list.component.html',
   styleUrl: './gl-events-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -40,25 +36,18 @@ function parseData(data: EventsList) {
 export class GlEventsListComponent {
   readonly data = input.required<EventsList | undefined>();
   readonly queryParams = input<EventsQueryParams>({});
-  readonly isLoading = input(false);
-
   readonly queryParamsChange = output<EventsQueryParams>();
   readonly reload = output<void>();
 
-  protected readonly parsedData = computed(
-    () => (this.data() ? parseData(this.data()!) : undefined),
-    {
-      equal: (pre, next) => typeof next === 'undefined' || Object.is(pre, next),
-    },
+  protected readonly parseData = computed(() =>
+    this.data() ? parseData(this.data()!) : undefined,
   );
 
   private readonly fb = inject(FormBuilder).nonNullable;
 
   protected readonly formGroup = computed(() =>
     this.fb.group({
-      q: this.fb.control(this.queryParams().q ?? '', {
-        updateOn: 'submit',
-      }),
+      q: this.fb.control(this.queryParams().q ?? '', { updateOn: 'submit' }),
     }),
   );
 

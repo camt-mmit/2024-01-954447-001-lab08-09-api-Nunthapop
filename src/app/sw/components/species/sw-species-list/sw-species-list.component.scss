@@ -1,1 +1,24 @@
-@use '../../scss/shared-list';
+/* src/app/sw/sw-species-list/sw-species-list.component.css */
+.species-list {
+  padding: 20px;
+}
+
+.species-item {
+  border: 1px solid #ccc;
+  padding: 10px;
+  margin: 10px 0;
+}
+
+.pagination {
+  margin-top: 20px;
+}
+
+button {
+  padding: 5px 10px;
+  margin: 0 5px;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

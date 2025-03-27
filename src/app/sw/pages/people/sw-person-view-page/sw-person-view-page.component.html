@@ -1,12 +1,5 @@
-<div class="app-cl-main-content">
-  <div class="-cmp-actions-bar">
-    <button type="button" appNavigateBack class="app-cl-button">
-      <i class="material-symbols-outlined">arrow_back</i>
-    </button>
-  </div>
-  @if (data(); as data) {
-    <app-sw-person-view [data]="data" (linkClick)="onLinkClick($event)" />
-  } @else {
-    <app-loading />
-  }
-</div>
+@if (data(); as data) {
+  <app-sw-person-view [data]="data" />
+}@else {
+  Loading...
+}

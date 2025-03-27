@@ -1,0 +1,7 @@
+<h3>Create New Contact</h3>
+<input [(ngModel)]="newContact.givenName" placeholder="Given Name" />
+<input [(ngModel)]="newContact.familyName" placeholder="Family Name" />
+<input [(ngModel)]="newContact.email" placeholder="Email" />
+<button (click)="createContact()">Add Contact</button>
+<button routerLink="../">Back to List</button>
+<p *ngIf="error()">{{ error() }}</p>

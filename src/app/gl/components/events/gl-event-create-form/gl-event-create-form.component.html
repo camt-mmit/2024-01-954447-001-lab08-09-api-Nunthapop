@@ -1,0 +1,34 @@
+<form ngNavtiveValidate [formGroup]="formGroup()" (ngSubmit)="onSubmit()">
+  <label>
+    <b>Summary</b>
+    <input type="text" formControlName="summary" required />
+  </label>
+<br>
+
+
+  <label>
+    <b>Description</b>
+    <input type="text" formControlName="description" />
+  </label>
+<br>
+
+
+  <label formGroupName="start">
+    <b>Start</b>
+    <input type="datetime-local" formControlName="dateTime" required />
+  </label>
+<br>
+
+<label formGroupName="end">
+  <b>End</b>
+  <input type="datetime-local" formControlName="dateTime" required />
+</label>
+<br>
+
+<div>
+  <button type="submit">Create</button>
+  <button type="button">Cancel</button>
+</div>
+
+
+</form>

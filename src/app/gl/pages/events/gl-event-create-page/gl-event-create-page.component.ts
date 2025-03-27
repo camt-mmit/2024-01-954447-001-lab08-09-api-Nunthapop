@@ -1,48 +1,28 @@
-import { Location } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  inject,
-  signal,
-} from '@angular/core';
-import { Router } from '@angular/router';
-import { take } from 'rxjs';
-import { createNavigateBackFn } from '../../../../shared/helpers/routes';
-import { GlEventFormComponent } from '../../../components/events/gl-event-form/gl-event-form.component';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { GlEventCreateFormComponent } from '../../../components/events/gl-event-create-form/gl-event-create-form.component';
+import { EventService } from '../../../services/event.service';
 import { EventInsertBody } from '../../../models/events';
-import { EventsService } from '../../../services/events.service';
+import { Location } from '@angular/common';
+import { take } from 'rxjs';
 
 @Component({
   selector: 'app-gl-event-create-page',
-  imports: [GlEventFormComponent],
+  imports: [GlEventCreateFormComponent],
   templateUrl: './gl-event-create-page.component.html',
   styleUrl: './gl-event-create-page.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class GlEventCreatePageComponent {
-  private readonly service = inject(EventsService);
-
-  protected readonly disabled = signal(false);
-
+  private readonly service = inject(EventService);
   private readonly location = inject(Location);
 
-  private readonly navigationBack = createNavigateBackFn();
-
   protected onFormSubmit(data: EventInsertBody): void {
-    this.disabled.set(true);
-
-    this.service
-      .create(data)
-      .pipe(take(1))
-      .subscribe({
-        complete: () => this.navigationBack(),
-        error: () => this.disabled.set(false),
-      });
+    this.service.create(data).pipe(take(1)).subscribe(() => {
+      this.location.back();
+    });
   }
 
-  private readonly router = inject(Router);
-
   protected onFormCancel(): void {
-    this.navigationBack();
+    this.location.back();
   }
 }

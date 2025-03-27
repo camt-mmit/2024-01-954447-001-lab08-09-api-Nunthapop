@@ -1,65 +1,56 @@
+import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
-  computed,
   inject,
-  input,
-  output,
+  OnInit,
+  signal,
 } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { LoadingComponent } from '../../../../shared/components/loading/loading.component';
-import { parseSpeciesList } from '../../../helpers';
-import { ResourcesList, SearchData, Species } from '../../../models';
+import { RouterLink } from '@angular/router';
+import { Species } from '../../../models';
+import { SpeciesServiceService } from '../../../services/species-service.service';
 
 @Component({
   selector: 'app-sw-species-list',
-  imports: [ReactiveFormsModule, LoadingComponent],
+  imports: [CommonModule, RouterLink],
   templateUrl: './sw-species-list.component.html',
   styleUrl: './sw-species-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SwSpeciesListComponent {
-  readonly data = input.required<ResourcesList<Species> | undefined>();
-  readonly searchData = input.required<SearchData>();
-  readonly isLoading = input.required<boolean>();
+export class SwSpeciesListComponent implements OnInit {
+  private speciesService = inject(SpeciesServiceService);
 
-  readonly searchDataChange = output<SearchData>();
-  readonly itemSelect = output<string>();
+  // Signals for reactive state
+  species = signal<Species[]>([]);
+  nextUrl = signal<string | null>(null);
+  previousUrl = signal<string | null>(null);
 
-  protected readonly parsedData = computed(
-    () => (this.data() ? parseSpeciesList(this.data()!) : undefined),
-    {
-      equal: (pre, next) => typeof next === 'undefined' || Object.is(pre, next),
-    },
-  );
+  ngOnInit() {
+    this.loadSpecies();
+  }
 
-  private readonly fb = inject(FormBuilder).nonNullable;
+  loadSpecies(url?: string) {
+    this.speciesService.getSpeciesList(url).subscribe({
+      next: (data) => {
+        this.species.set(data.results);
+        this.nextUrl.set(data.next);
+        this.previousUrl.set(data.previous);
+      },
+      error: (err) => console.error('Error fetching species:', err),
+    });
+  }
 
-  protected readonly formGroup = computed(() =>
-    this.fb.group({
-      search: this.fb.control(this.searchData().search ?? '', {
-        updateOn: 'submit',
-      }),
-    }),
-  );
-
-  protected select(id: string): void {
-    if (id) {
-      this.itemSelect.emit(id);
+  goToNextPage() {
+    const next = this.nextUrl();
+    if (next) {
+      this.loadSpecies(next);
     }
   }
 
-  protected onSubmit(): void {
-    this.searchDataChange.emit(this.formGroup().getRawValue());
-  }
-
-  protected clear(): void {
-    this.searchDataChange.emit({});
-  }
-
-  protected goto(url: URL | null): void {
-    if (url) {
-      this.searchDataChange.emit(Object.fromEntries(url.searchParams));
+  goToPreviousPage() {
+    const prev = this.previousUrl();
+    if (prev) {
+      this.loadSpecies(prev);
     }
   }
 }

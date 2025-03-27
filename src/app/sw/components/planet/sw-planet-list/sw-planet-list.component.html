@@ -1,0 +1,22 @@
+<div class="planets-list">
+  <h2>Planets List</h2>
+
+  <div class="pagination">
+    <button (click)="goToPreviousPage()" [disabled]="!previousUrl()">
+      Previous
+    </button>
+    <button (click)="goToNextPage()" [disabled]="!nextUrl()">Next</button>
+  </div>
+
+  @if (planets().length === 0) {
+    <p>Loading planets...</p>
+  }
+
+  @for (planet of planets(); track planet.url; let i = $index) {
+    <div class="planet-item">
+      <a [routerLink]="['/star-war/planets/', i + 1]">
+        <h3>{{ planet.name }}</h3>
+      </a>
+    </div>
+  }
+</div>

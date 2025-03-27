@@ -1,55 +1,50 @@
-import { DatePipe, DecimalPipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
   Component,
-  computed,
-  input,
-  output,
+  effect,
+  inject,
+  OnInit,
+  signal,
 } from '@angular/core';
-import { SwNumberDirective } from '../../../directives/sw-number.directive';
-import { SwResourceDirective } from '../../../directives/sw-resource.directive';
-import {
-  parsePerson,
-  parsePlanet,
-  parseSpecies,
-  readonlyArray,
-  resourceSignal,
-} from '../../../helpers';
+import { ActivatedRoute } from '@angular/router';
 import { Species } from '../../../models';
+import { SpeciesServiceService } from '../../../services/species-service.service';
 
 @Component({
   selector: 'app-sw-species-view',
-  imports: [DatePipe, DecimalPipe, SwResourceDirective, SwNumberDirective],
+  imports: [],
   templateUrl: './sw-species-view.component.html',
   styleUrl: './sw-species-view.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SwSpeciesViewComponent {
-  readonly data = input.required<Species>();
+export class SwSpeciesViewComponent implements OnInit {
+  private route = inject(ActivatedRoute);
+  private speciesService = inject(SpeciesServiceService);
+  private cdr = inject(ChangeDetectorRef); // ✅ Inject ChangeDetectorRef
+  species = signal<Species | undefined>(undefined);
 
-  readonly linkClick = output<string>();
+  constructor() {
+    effect(() => {
+      console.log('species() updated:', this.species()); // ✅ Debug ถ้าค่าถูกอัปเดต
+      this.cdr.markForCheck(); // ✅ Force UI Update
+    });
+  }
 
-  readonly parsedData = computed(() => {
-    const { homeworld, people, ...rest } = parseSpecies(this.data());
+  ngOnInit() {
+    const id = this.route.snapshot.paramMap.get('id');
+    console.log('Species ID from route:', id); // ✅ Debug ID
 
-    return {
-      ...rest,
-      homeworld: resourceSignal(homeworld, parsePlanet),
-      people: readonlyArray(
-        people.map((url) => resourceSignal(url, parsePerson)),
-      ),
-    } as const;
-  });
-
-  readonly normalizedName = computed(() =>
-    this.parsedData()
-      .name.replaceAll(/[\s']+/g, '-')
-      .toLocaleLowerCase(),
-  );
-
-  protected onLinkClick(id: string | undefined): void {
     if (id) {
-      this.linkClick.emit(id);
+      this.speciesService.getSpecies(+id).subscribe({
+        next: (data: Species) => {
+          console.log('Fetched species data:', data);
+          this.species.set(data); // ✅ อัปเดตค่า
+        },
+        error: (err) => console.error('Error fetching species:', err),
+      });
+    } else {
+      console.warn('No ID found in route parameters.');
     }
   }
 }

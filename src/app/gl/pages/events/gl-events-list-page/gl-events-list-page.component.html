@@ -1,16 +1,8 @@
-<div class="app-cl-main-content">
+<div>
   <a routerLink="create">
-    <button type="button" class="app-cl-button app-cl-primary">
-      <i class="material-symbols-outlined">add</i>
-      Create
-    </button>
+    <button type="button">Create</button>
   </a>
 </div>
-<app-gl-events-list
-  [data]="resource.value()"
-  [queryParams]="queryParams()"
-  [isLoading]="resource.isLoading()"
-  (queryParamsChange)="onQuery($event)"
-  (reload)="resource.reload()"
-  class="app-cl-main-content"
-/>
+
+<app-gl-events-list [data]="dataResource.value()" [queryParams]="queryParams()"
+  (queryParamsChange)="onQueryParamsChange($event)" (reload)="dataResource.reload()" />

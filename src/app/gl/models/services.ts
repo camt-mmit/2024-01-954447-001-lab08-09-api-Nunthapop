@@ -1,3 +1,5 @@
+import { InjectionToken } from '@angular/core';
+
 export interface OauthConfiguration {
   readonly name: string;
   readonly clientId: string;
@@ -35,3 +37,13 @@ export class StateTokenNotFound extends Error {
     super(`State token '${stateToken}' is not found or expired!!`, options);
   }
 }
+
+export interface KeyValueStorage {
+  get<T>(key: string): Promise<T | null>;
+  set<T>(key: string, value: T): Promise<void>;
+  remove(key: string): Promise<void>;
+}
+
+export const KEY_VALUE_STORAGE = new InjectionToken<KeyValueStorage>(
+  'key-value-storage',
+);

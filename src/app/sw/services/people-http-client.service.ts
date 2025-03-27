@@ -1,24 +1,25 @@
 import { HttpClient } from '@angular/common/http';
-import { inject, Injectable } from '@angular/core';
+import { inject, Injectable, Resource } from '@angular/core';
 import { Observable } from 'rxjs';
-import { apiUrl } from '../helpers';
-import { Person, ResourcesList, SearchData } from '../models';
+import { Person, ResourceList, SearchData } from '../models';
+import { apiURL } from '../helpers';
 
-const serviceUrl = `${apiUrl}/people/`;
+const serviceUrl = `${apiURL}/people/`;
+
 
 @Injectable({
-  providedIn: 'root',
+  providedIn: 'root'
 })
 export class PeopleHttpClientService {
-  private readonly http = inject(HttpClient);
+  private readonly http = inject(HttpClient)
 
-  getAll(searchData?: SearchData): Observable<ResourcesList<Person>> {
-    return this.http.get<ResourcesList<Person>>(serviceUrl, {
-      params: { ...searchData },
-    });
+  getAll(searchData?: SearchData): Observable<ResourceList<Person>>{
+    return this.http.get<ResourceList<Person>>(serviceUrl, {
+      params: {...searchData},
+    })
   }
 
-  get(id: string): Observable<Person> {
-    return this.http.get<Person>(`${serviceUrl}${id}`);
+  get(id: string): Observable<Person>{
+    return this.http.get<Person>(`${serviceUrl}${id}`)
   }
 }
