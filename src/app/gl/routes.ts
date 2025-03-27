@@ -27,7 +27,7 @@ export default [
         redirectUri:
           isDevMode() ?
             'http://localhost:4200/google/authorization'
-            : 'https://camt-mmit.github.io/2024-01-954447-001-lab08-09-api-mrpachara/google/authorization',
+            : 'https://camt-mmit.github.io/2024-01-954447-001-lab08-09-api-Nunthapop/google/authorization',
       }),
     ],
     children: [
