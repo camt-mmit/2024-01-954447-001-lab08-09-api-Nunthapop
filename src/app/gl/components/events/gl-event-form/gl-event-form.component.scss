@@ -1,1 +1,84 @@
-@use '../../scss/shared-form';
+form {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+fieldset {
+  border: none;
+  padding: 0;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem;
+}
+
+.app-cl-title {
+  font-size: 1rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
+.app-cl-control {
+  padding: 0.5rem;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+textarea.app-cl-control {
+  resize: vertical;
+}
+
+.-cmp-actions-bar {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1.5rem;
+}
+
+.app-cl-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.app-cl-primary {
+  background-color: #007bff;
+  color: white;
+}
+
+.app-cl-primary:hover {
+  background-color: #0056b3;
+}
+
+.app-cl-warn {
+  background-color: #dc3545;
+  color: white;
+}
+
+.app-cl-warn:hover {
+  background-color: #a71d2a;
+}
+
+.app-cl-button i {
+  font-size: 1.2rem;
+}
+
+.app-cl-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.5);
+}
